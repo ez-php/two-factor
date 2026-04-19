@@ -1,6 +1,6 @@
 {
     "name": "ez-php/two-factor",
-    "version": "1.6.1",
+    "version": "1.7.0",
     "description": "Two-factor authentication module for the ez-php framework — RFC 6238 TOTP, QR code URLs, backup codes, and HTTP middleware",
     "type": "library",
     "license": "MIT",
