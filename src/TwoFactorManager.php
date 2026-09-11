@@ -65,18 +65,47 @@ final class TwoFactorManager
      *
      * Uses `hash_equals` for timing-safe comparison.
      *
-     * @param string   $secret    Base32-encoded shared secret.
-     * @param string   $code      6-digit code submitted by the user.
-     * @param int|null $timestamp Unix timestamp. Defaults to `time()`.
+     * `TwoFactorManager` is stateless (no constructor dependencies, no
+     * storage), so it cannot track which codes have already been consumed
+     * on its own. To prevent replay of an intercepted code within the
+     * verification window, the caller should persist the time step a
+     * successful verification matched (e.g. alongside the user record) and
+     * pass it back in on the next call as `$lastUsedStep`; any step at or
+     * before it is rejected even if the code itself is otherwise valid. The
+     * matched step is written to `$matchedStep` by reference so the caller
+     * has something to persist.
+     *
+     * @param string   $secret       Base32-encoded shared secret.
+     * @param string   $code         6-digit code submitted by the user.
+     * @param int|null $timestamp    Unix timestamp. Defaults to `time()`.
+     * @param int|null $lastUsedStep Time step of the last code this secret successfully verified,
+     *                               if the caller is tracking it. Steps at or before this value
+     *                               are rejected. `null` (the default) disables replay protection.
+     * @param int|null $matchedStep  Set by reference to the time step that matched, when
+     *                               verification succeeds. Left untouched on failure.
      */
-    public function verifyCode(string $secret, string $code, ?int $timestamp = null): bool
-    {
+    public function verifyCode(
+        string $secret,
+        string $code,
+        ?int $timestamp = null,
+        ?int $lastUsedStep = null,
+        ?int &$matchedStep = null,
+    ): bool {
         $time = $timestamp ?? time();
+        $currentStep = intdiv($time, self::PERIOD);
 
         for ($step = -self::WINDOW; $step <= self::WINDOW; $step++) {
-            $expected = Totp::generate($secret, $time + ($step * self::PERIOD), self::PERIOD, self::DIGITS);
+            $candidateStep = $currentStep + $step;
+
+            if ($lastUsedStep !== null && $candidateStep <= $lastUsedStep) {
+                continue;
+            }
+
+            $expected = Totp::generate($secret, $candidateStep * self::PERIOD, self::PERIOD, self::DIGITS);
 
             if (hash_equals($expected, $code)) {
+                $matchedStep = $candidateStep;
+
                 return true;
             }
         }

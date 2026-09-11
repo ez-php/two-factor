@@ -93,6 +93,68 @@ final class TwoFactorManagerTest extends TestCase
         self::assertFalse($this->manager->verifyCode($secret, '000000'));
     }
 
+    public function testVerifyCodeReportsMatchedStepByReference(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $timestamp = 1_000_000; // step 33333
+
+        $code = $this->manager->generateCode($secret, $timestamp);
+
+        $matchedStep = null;
+        self::assertTrue($this->manager->verifyCode($secret, $code, $timestamp, null, $matchedStep));
+        self::assertSame(intdiv($timestamp, 30), $matchedStep);
+    }
+
+    public function testVerifyCodeRejectsReplayOfAlreadyUsedStep(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $timestamp = 1_000_000;
+        $currentStep = intdiv($timestamp, 30);
+
+        $code = $this->manager->generateCode($secret, $timestamp);
+
+        // Caller previously persisted this exact step as already consumed.
+        self::assertFalse($this->manager->verifyCode($secret, $code, $timestamp, $currentStep));
+    }
+
+    public function testVerifyCodeRejectsReplayOfStepBeforeLastUsed(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $timestamp = 1_000_000;
+        $currentStep = intdiv($timestamp, 30);
+
+        // An older, previously-consumed step's code, replayed against a
+        // "last used" watermark that has already moved past it.
+        $oldCode = $this->manager->generateCode($secret, $timestamp - 30);
+
+        self::assertFalse($this->manager->verifyCode($secret, $oldCode, $timestamp, $currentStep));
+    }
+
+    public function testVerifyCodeAcceptsNewerStepAfterLastUsed(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $timestamp = 1_000_000;
+        $previousStep = intdiv($timestamp, 30) - 5; // an old watermark
+
+        $code = $this->manager->generateCode($secret, $timestamp);
+
+        self::assertTrue($this->manager->verifyCode($secret, $code, $timestamp, $previousStep));
+    }
+
+    public function testVerifyCodeWithoutLastUsedStepDisablesReplayProtection(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $timestamp = 1_000_000;
+
+        $code = $this->manager->generateCode($secret, $timestamp);
+
+        // Same code verified twice with no $lastUsedStep tracking: both
+        // succeed, since replay protection is opt-in and stateless callers
+        // get the pre-existing behaviour unchanged.
+        self::assertTrue($this->manager->verifyCode($secret, $code, $timestamp));
+        self::assertTrue($this->manager->verifyCode($secret, $code, $timestamp));
+    }
+
     public function testVerifyCodeDefaultsToNow(): void
     {
         $secret = $this->manager->generateSecret();
