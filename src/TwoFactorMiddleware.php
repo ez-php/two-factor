@@ -9,6 +9,7 @@ use EzPhp\Contracts\MiddlewareInterface;
 use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 
 /**
  * Class TwoFactorMiddleware
@@ -54,9 +55,9 @@ final class TwoFactorMiddleware implements MiddlewareInterface
      * Returns `423 Locked` when 2FA is required but not yet verified.
      *
      * @param RequestInterface $request
-     * @param callable(RequestInterface): Response $next
+     * @param callable(RequestInterface): ResponseInterface $next
      */
-    public function handle(RequestInterface $request, callable $next): Response
+    public function handle(RequestInterface $request, callable $next): ResponseInterface
     {
         $user = Auth::user();
 

@@ -8,6 +8,7 @@ use EzPhp\Auth\Auth;
 use EzPhp\Auth\UserInterface;
 use EzPhp\Http\Request;
 use EzPhp\Http\Response;
+use EzPhp\Http\ResponseInterface;
 use EzPhp\TwoFactor\TwoFactorAuthenticableInterface;
 use EzPhp\TwoFactor\TwoFactorMiddleware;
 use PHPUnit\Framework\Attributes\CoversClass;
@@ -108,7 +109,7 @@ final class TwoFactorMiddlewareTest extends TestCase
         self::assertArrayHasKey('X-Requires-2FA', $response->headers());
     }
 
-    private function callMiddleware(Request $request): Response
+    private function callMiddleware(Request $request): ResponseInterface
     {
         $middleware = new TwoFactorMiddleware();
         return $middleware->handle($request, fn (): Response => new Response('ok', 200));
