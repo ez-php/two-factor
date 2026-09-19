@@ -310,6 +310,7 @@ High-level service. No constructor dependencies. Wraps `Base32`, `Totp`, and PHP
 - `getQrCodeUrl($issuer, $account, $secret)` — builds `otpauth://totp/` URI; both issuer and account are `rawurlencode`-d; parameters added via `http_build_query`
 - `generateBackupCodes($count)` — 4 random bytes per code, formatted as `XXXX-XXXX` uppercase hex
 - `hashBackupCode($code)` / `verifyBackupCode($code, $hash)` — bcrypt (`PASSWORD_BCRYPT`) via `password_hash` / `password_verify`
+- `verifyForUser($user, $code, ...)` — verifies a code against a `TwoFactorAuthenticableInterface` user and returns `EzPhp\Contracts\SecondFactorResult` (`NotConfigured` if `hasTwoFactorEnabled()` is false, else `Satisfied`/`NotSatisfied` per `verifyCode()`); see Design Decisions
 
 ---
 
@@ -346,6 +347,7 @@ Binds `TwoFactorManager` in `register()`. No-op `boot()`. No configuration requi
 - **No QR image generation.** Generating the actual QR code image requires a library (e.g. `endroid/qr-code`). This module intentionally returns only the `otpauth://` URI — the application chooses how to render it. This keeps the module's dependency footprint minimal.
 - **Session-based verification state.** The middleware checks `$_SESSION[SESSION_KEY]`. This is the standard approach for web applications. API/SPA applications may prefer a token-based approach — they can bypass the session check by implementing their own middleware and calling `TwoFactorManager::verifyCode()` directly.
 - **Depends on `ez-php/auth`.** The middleware calls `Auth::user()` to get the currently authenticated user. This couples the module to `ez-php/auth`. Applications not using the auth module should bypass the middleware and call `TwoFactorManager` directly.
+- **`verifyForUser()` returns `EzPhp\Contracts\SecondFactorResult`, not a bool.** `ez-php/webauthn` verifies a structurally different second factor (a passkey assertion, not a submitted code) and cannot share `verifyCode()`'s signature — but both modules can report a uniform `Satisfied`/`NotSatisfied`/`NotConfigured` outcome via this shared contracts-level enum, letting application login-flow code branch on one type regardless of which mechanism ran. This does not merge the two modules — `ez-php/webauthn` remains excluded above, and `ez-php/contracts` (already a hard dependency of this module) carries no logic of its own, only the enum. `verifyCode()` itself is unchanged; `verifyForUser()` is an additive wrapper.
 
 ---
 

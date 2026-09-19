@@ -110,6 +110,25 @@ foreach ($storedHashes as $hash) {
 }
 ```
 
+### Verifying against a shared login-flow result
+
+`verifyForUser()` wraps `verifyCode()` behind `EzPhp\Contracts\SecondFactorResult`
+(`Satisfied` / `NotSatisfied` / `NotConfigured`) instead of a plain bool — the same
+outcome type `ez-php/webauthn`'s `SecondFactorAssertionVerifier` returns for passkey
+assertions. Useful when your login flow needs to handle either mechanism through one
+result type without merging the two modules:
+
+```php
+use EzPhp\Contracts\SecondFactorResult;
+
+$result = $manager->verifyForUser(Auth::user(), $request->input('code'));
+
+match ($result) {
+    SecondFactorResult::Satisfied => $_SESSION[TwoFactorMiddleware::SESSION_KEY] = true,
+    SecondFactorResult::NotConfigured, SecondFactorResult::NotSatisfied => null, // handled below
+};
+```
+
 ## Middleware Behaviour
 
 `TwoFactorMiddleware` runs on every request passing through it:
@@ -137,6 +156,7 @@ The `X-Requires-2FA: true` header signals to API clients that a 2FA verification
 | `generateBackupCodes(int $count = 8): string[]` | Generates `XXXX-XXXX` format backup codes |
 | `hashBackupCode(string $code): string` | Bcrypt-hashes a backup code for storage |
 | `verifyBackupCode(string $code, string $hash): bool` | Verifies a backup code against its hash |
+| `verifyForUser(TwoFactorAuthenticableInterface $user, string $code, ...): SecondFactorResult` | Verifies a code for a user, returning `EzPhp\Contracts\SecondFactorResult` |
 
 ### `TwoFactorMiddleware`
 

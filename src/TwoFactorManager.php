@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace EzPhp\TwoFactor;
 
+use EzPhp\Contracts\SecondFactorResult;
+
 /**
  * Class TwoFactorManager
  *
@@ -181,5 +183,38 @@ final class TwoFactorManager
     public function verifyBackupCode(string $code, string $hash): bool
     {
         return password_verify($code, $hash);
+    }
+
+    /**
+     * Verify a submitted code against a user's TOTP configuration and report
+     * the outcome as a shared `SecondFactorResult`, so login-flow code can
+     * branch on one result type regardless of which second-factor mechanism
+     * (TOTP here, WebAuthn elsewhere) produced it.
+     *
+     * Returns `SecondFactorResult::NotConfigured` without checking the code
+     * at all when the user has no TOTP secret enabled — callers otherwise
+     * get the same `Satisfied`/`NotSatisfied` outcome as `verifyCode()`.
+     *
+     * @param TwoFactorAuthenticableInterface $user         User to verify the code against.
+     * @param string                          $code         6-digit code submitted by the user.
+     * @param int|null                        $timestamp    Unix timestamp. Defaults to `time()`.
+     * @param int|null                        $lastUsedStep Time step of the last code this user's secret
+     *                                                       successfully verified. See `verifyCode()`.
+     * @param int|null                        $matchedStep  Set by reference to the matched time step on success.
+     */
+    public function verifyForUser(
+        TwoFactorAuthenticableInterface $user,
+        string $code,
+        ?int $timestamp = null,
+        ?int $lastUsedStep = null,
+        ?int &$matchedStep = null,
+    ): SecondFactorResult {
+        if (!$user->hasTwoFactorEnabled()) {
+            return SecondFactorResult::NotConfigured;
+        }
+
+        $verified = $this->verifyCode($user->getTwoFactorSecret(), $code, $timestamp, $lastUsedStep, $matchedStep);
+
+        return $verified ? SecondFactorResult::Satisfied : SecondFactorResult::NotSatisfied;
     }
 }

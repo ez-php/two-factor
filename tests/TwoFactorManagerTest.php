@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests;
 
+use EzPhp\Contracts\SecondFactorResult;
 use EzPhp\TwoFactor\Base32;
 use EzPhp\TwoFactor\Totp;
+use EzPhp\TwoFactor\TwoFactorAuthenticableInterface;
 use EzPhp\TwoFactor\TwoFactorManager;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -228,5 +230,62 @@ final class TwoFactorManagerTest extends TestCase
 
         self::assertNotSame($code, $hash);
         self::assertStringStartsWith('$2y$', $hash);
+    }
+
+    // ── verifyForUser ────────────────────────────────────────────────────────
+
+    /**
+     * @param bool $enabled
+     * @param string $secret
+     *
+     * @return TwoFactorAuthenticableInterface
+     */
+    private function userWith(bool $enabled, string $secret = ''): TwoFactorAuthenticableInterface
+    {
+        return new class ($enabled, $secret) implements TwoFactorAuthenticableInterface {
+            public function __construct(private readonly bool $enabled, private readonly string $secret)
+            {
+            }
+
+            public function hasTwoFactorEnabled(): bool
+            {
+                return $this->enabled;
+            }
+
+            public function getTwoFactorSecret(): string
+            {
+                return $this->secret;
+            }
+        };
+    }
+
+    public function testVerifyForUserReturnsNotConfiguredWhenTwoFactorDisabled(): void
+    {
+        $user = $this->userWith(enabled: false);
+
+        $result = $this->manager->verifyForUser($user, '123456');
+
+        self::assertSame(SecondFactorResult::NotConfigured, $result);
+    }
+
+    public function testVerifyForUserReturnsSatisfiedForAValidCode(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $user = $this->userWith(enabled: true, secret: $secret);
+        $code = $this->manager->generateCode($secret);
+
+        $result = $this->manager->verifyForUser($user, $code);
+
+        self::assertSame(SecondFactorResult::Satisfied, $result);
+    }
+
+    public function testVerifyForUserReturnsNotSatisfiedForAWrongCode(): void
+    {
+        $secret = $this->manager->generateSecret();
+        $user = $this->userWith(enabled: true, secret: $secret);
+
+        $result = $this->manager->verifyForUser($user, '000000');
+
+        self::assertSame(SecondFactorResult::NotSatisfied, $result);
     }
 }
