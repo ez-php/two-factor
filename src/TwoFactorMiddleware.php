@@ -6,7 +6,6 @@ namespace EzPhp\TwoFactor;
 
 use EzPhp\Auth\Auth;
 use EzPhp\Contracts\MiddlewareInterface;
-use EzPhp\Http\Request;
 use EzPhp\Http\RequestInterface;
 use EzPhp\Http\Response;
 use EzPhp\Http\ResponseInterface;
