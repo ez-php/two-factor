@@ -152,7 +152,7 @@ php make_module.php <name> --description="..." --services=mysql,redis --extensio
 `<name>` is the kebab-case package name; the namespace is derived as
 `EzPhp\<PascalCase>` (each `-`-separated word upper-cased) unless `--namespace=`
 overrides it. Existing exceptions the guess gets wrong: `bignum` → `BigNum`,
-`dataloader` → `DataLoader`, `dotenv` → `Env`, `graphql` → `GraphQL`, `oauth` → `OAuth`,
+`dataloader` → `DataLoader`, `dotenv` → `Env`, `graphql` → `GraphQL`, `graphql-subscriptions` → `GraphQLSubscriptions`, `oauth` → `OAuth`,
 `opcache` → `OPCache`, `openapi` → `OpenApi`, `swagger-ui` → `SwaggerUI`, `webauthn` → `WebAuthn` and
 `websocket` → `WebSocket`; `websocket-client` → `WebsocketClient`, `websocket-tls` → `WebsocketTls`,
 `webauthn-metadata` → `WebauthnMetadata` and `metrics-statsd` → `MetricsStatsd` are
@@ -386,6 +386,6 @@ No external infrastructure required — all tests run in-process.
 - **Backup code storage and usage tracking** — the application manages the database; this module provides generation, hashing, and verification only.
 - **HOTP (counter-based OTP)** — HOTP requires server-side counter synchronisation state; out of scope.
 - **WebAuthn / FIDO2** — hardware key / passkey authentication is a fundamentally different protocol; belongs in a separate module.
-- **SMS / email OTP delivery** — use `ez-php/notification` for out-of-band delivery; this module implements TOTP (app-based) only.
+- **SMS / email OTP delivery** — use `ez-php/notification` for out-of-band delivery (its `sms` channel sends through `ez-php/sms`); this module implements TOTP (app-based) only.
 - **Recovery flow / account unlock** — application-level concern; this module provides the building blocks.
 - **Rate limiting on OTP attempts** — apply `ez-php/rate-limiter`'s `ThrottleMiddleware` to the verification endpoint.
