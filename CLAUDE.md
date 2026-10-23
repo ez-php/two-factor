@@ -151,9 +151,9 @@ php make_module.php <name> --description="..." --services=mysql,redis --extensio
 
 `<name>` is the kebab-case package name; the namespace is derived as
 `EzPhp\<PascalCase>` (each `-`-separated word upper-cased) unless `--namespace=`
-overrides it. Existing exceptions the guess gets wrong: `bignum` → `BigNum`,
-`dataloader` → `DataLoader`, `dotenv` → `Env`, `graphql` → `GraphQL`, `graphql-subscriptions` → `GraphQLSubscriptions`, `oauth` → `OAuth`,
-`opcache` → `OPCache`, `openapi` → `OpenApi`, `swagger-ui` → `SwaggerUI`, `webauthn` → `WebAuthn` and
+overrides it. Existing exceptions the guess gets wrong: `asyncapi` → `AsyncApi`,
+`bignum` → `BigNum`, `dataloader` → `DataLoader`, `dotenv` → `Env`, `graphql` → `GraphQL`, `graphql-subscriptions` → `GraphQLSubscriptions`, `oauth` → `OAuth`,
+`opcache` → `OPCache`, `openapi` → `OpenApi`, `qrcode` → `QrCode`, `swagger-ui` → `SwaggerUI`, `webauthn` → `WebAuthn` and
 `websocket` → `WebSocket`; `websocket-client` → `WebsocketClient`, `websocket-tls` → `WebsocketTls`,
 `webauthn-metadata` → `WebauthnMetadata` and `metrics-statsd` → `MetricsStatsd` are
 intentional lower-case-word namespaces, and `testing-application` shares `EzPhp\Testing\`
@@ -363,7 +363,7 @@ Binds `TwoFactorManager` in `register()`. No-op `boot()`. No configuration requi
 - **`hash_equals` for code comparison.** TOTP codes are short strings. Comparing them with `===` is safe from an information-leakage standpoint (the code space is only 10^6), but `hash_equals` is the defensive-correct choice and has zero cost.
 - **Backup codes use bcrypt.** Backup codes are high-value secrets. `PASSWORD_BCRYPT` is appropriate for storage. The module does not track which backup codes have been used — that is the application's responsibility (delete or mark the hash as consumed after verification).
 - **423 Locked status code.** RFC 4918 defines 423 Locked as "the resource that is being accessed is locked". It is the correct status for "you are authenticated but blocked pending a second factor". Some implementations use 403 Forbidden, but 423 is more semantically accurate and allows clients to distinguish between "forbidden forever" (403) and "temporarily blocked pending 2FA" (423).
-- **No QR image generation.** Generating the actual QR code image requires a library (e.g. `endroid/qr-code`). This module intentionally returns only the `otpauth://` URI — the application chooses how to render it. This keeps the module's dependency footprint minimal.
+- **No QR image generation.** This module returns only the `otpauth://` URI; rendering it is `ez-php/qrcode`'s job (dependency-free encoder with SVG/PNG output), kept separate so two-factor stays dependency-free and applications can render the URI however they like.
 - **Session-based verification state.** The middleware checks `$_SESSION[SESSION_KEY]`. This is the standard approach for web applications. API/SPA applications may prefer a token-based approach — they can bypass the session check by implementing their own middleware and calling `TwoFactorManager::verifyCode()` directly.
 - **Depends on `ez-php/auth`.** The middleware calls `Auth::user()` to get the currently authenticated user. This couples the module to `ez-php/auth`. Applications not using the auth module should bypass the middleware and call `TwoFactorManager` directly.
 - **`verifyForUser()` returns `EzPhp\Contracts\SecondFactorResult`, not a bool.** `ez-php/webauthn` verifies a structurally different second factor (a passkey assertion, not a submitted code) and cannot share `verifyCode()`'s signature — but both modules can report a uniform `Satisfied`/`NotSatisfied`/`NotConfigured` outcome via this shared contracts-level enum, letting application login-flow code branch on one type regardless of which mechanism ran. This does not merge the two modules — `ez-php/webauthn` remains excluded above, and `ez-php/contracts` (already a hard dependency of this module) carries no logic of its own, only the enum. `verifyCode()` itself is unchanged; `verifyForUser()` is an additive wrapper.
@@ -383,7 +383,7 @@ No external infrastructure required — all tests run in-process.
 
 ## What does not belong in this module
 
-- **QR code image generation** — use a library like `endroid/qr-code` in the application layer; this module provides the `otpauth://` URI only.
+- **QR code image generation** — `ez-php/qrcode`; this module provides the `otpauth://` URI only.
 - **Backup code storage and usage tracking** — the application manages the database; this module provides generation, hashing, and verification only.
 - **HOTP (counter-based OTP)** — HOTP requires server-side counter synchronisation state; out of scope.
 - **WebAuthn / FIDO2** — hardware key / passkey authentication is a fundamentally different protocol; belongs in a separate module.

@@ -66,7 +66,10 @@ $secret = $manager->generateSecret();
 
 // Get QR code URL to display to the user
 $qrUrl = $manager->getQrCodeUrl('MyApp', $user->email, $secret);
-// → render into a QR code image using your preferred library
+
+// Render it, e.g. with ez-php/qrcode (composer require ez-php/qrcode):
+$svg = (new \EzPhp\QrCode\Renderer\SvgRenderer(size: 200))
+    ->render((new \EzPhp\QrCode\Encoder())->encode($qrUrl));
 ```
 
 ### Verifying the setup code
