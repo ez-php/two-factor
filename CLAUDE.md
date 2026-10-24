@@ -287,6 +287,8 @@ tests/
   TwoFactorManagerTest.php          — Full manager API coverage
   TwoFactorMiddlewareTest.php       — Middleware pass-through and 423 scenarios
   TwoFactorServiceProviderTest.php  — Smoke test: TwoFactorServiceProvider registers its binding in a minimal container context without error
+  Support/FakeConfig.php            — minimal ConfigInterface stub for service provider tests
+  Support/FakeContainer.php         — minimal ContainerInterface stub for service provider tests
 ```
 
 ---
