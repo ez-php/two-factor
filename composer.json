@@ -1,6 +1,6 @@
 {
     "name": "ez-php/two-factor",
-    "version": "2.6.5",
+    "version": "2.7.0",
     "description": "Two-factor authentication module for the ez-php framework — RFC 6238 TOTP, QR code URLs, backup codes, and HTTP middleware",
     "type": "library",
     "license": "MIT",
@@ -28,12 +28,12 @@
     },
     "require": {
         "php": "^8.5",
-        "ez-php/contracts": "^2.6.0",
-        "ez-php/http": "^2.6.0",
-        "ez-php/auth": "^2.6.0"
+        "ez-php/contracts": "^2.7.0",
+        "ez-php/http": "^2.7.0",
+        "ez-php/auth": "^2.7.0"
     },
     "require-dev": {
-        "ez-php/docker": "^2.6.0",
+        "ez-php/docker": "^2.7.0",
         "phpunit/phpunit": "^13.0",
         "phpstan/phpstan": "^2.1",
         "friendsofphp/php-cs-fixer": "^3.94",
